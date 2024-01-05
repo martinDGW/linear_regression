@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 import argparse
 
 ## NEED PARSING
@@ -46,24 +47,13 @@ def mean_square_error(X, Y, n, m, b):
 def gradient_descent(X, Y, n, m, b):
 	L = 0.001
 	clip_value = 5.0  # Set a threshold for gradient clipping
-	epochs = 10000
-	prev_cost = mean_square_error(X, Y, n, m, b)
-	for i in range(epochs):
-		Y_pred = m * X + b
-		Dm = (-2 / n) * sum(X * (Y - Y_pred))
-		Db = (-2 / n) * sum(Y - Y_pred)
-		Dm = max(min(Dm, clip_value), -clip_value)
-		Db = max(min(Db, clip_value), -clip_value)
-		m = m - L * Dm
-		b = b - L * Db
-		cost = mean_square_error(X, Y, n, m, b)
-
-        # If the cost is increasing, reduce the learning rate
-		# print(f"========\nprev:{prev_cost}")
-		# print(f"cost:{cost}")
-		if not 0 < cost < prev_cost:
-			L *= 0.9
-		prev_cost = cost
+	Y_pred = m * X + b
+	Dm = (-2 / n) * sum(X * (Y - Y_pred))
+	Db = (-2 / n) * sum(Y - Y_pred)
+	Dm = max(min(Dm, clip_value), -clip_value)
+	Db = max(min(Db, clip_value), -clip_value)
+	m = m - L * Dm
+	b = b - L * Db
 	return m, b
 
 # === MAIN === #
@@ -79,20 +69,20 @@ if __name__ == "__main__":
 	m = 0 # slope
 	b = 0 # intercept
 	n = len(X) # n values in dataset
+	L = 0.01
+	epochs = 4000
+
+	costs = [0] * 4000
 
 	# calcul cost before training (diff between prediction and real value)
-	cost = mean_square_error(X, Y, n, m, b)
-	print(f"cost before training: {cost}")
+	# print(f"cost before training: {cost}")
 
 	# gradient descent
-	
-	m, b = gradient_descent(X, Y, n, m, b)
 	# iterate
+	for i in range(epochs):
+		costs[i] = mean_square_error(X, Y, n, m, b)
+		m, b = gradient_descent(X, Y, n, m, b)
 
-	# calcul cost after training (diff between prediction and real value)
-	cost = mean_square_error(X, Y, n, m, b)
-	print(f"cost after training: {cost}")
-	
 	# make predictons
 	# print(f"prediction: {m * 7000 + b}")
 
@@ -100,3 +90,8 @@ if __name__ == "__main__":
 
 	# # visualize
 	plot_predictions(X, Y, get_Yprediction(m, X, b))
+	plt.xlabel('Iterations')
+	plt.ylabel('Cost')
+	plt.title('Cost Function over Iterations')
+	plt.plot(np.arange(epochs), costs, label='Cost Function')
+	plt.show()
