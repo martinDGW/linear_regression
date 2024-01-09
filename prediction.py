@@ -25,7 +25,7 @@ def try_preditcion(a, b, x_multiplier, y_multiplier):
 			if prediction < 0:
 				print(f"{RED}Model has predicted a negative value.\nYou should not sell your vehicle...{RESET}")
 			else:
-				print(f"Estimated price: {int(prediction)}")
+				print(f"Estimated price: {prediction:.0f}")
 
 def signal_handler(sig, frame):
 	print(f"{RED}Signal detected.{RESET}")

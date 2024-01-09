@@ -63,7 +63,6 @@ def get_thetas(a, b, x_divider, y_divider):
 
 # === VISUALIZE DATAS === #
 def display_datas(X, Y, Y_pred, axs, epochs, costs):
-	print(f"final cost: {costs[epochs -1]}")
 	# display datas cloud
 	axs[0].scatter(X, Y, label='value', color="blue", marker='o')
 	axs[0].set_xlabel('Kms')
@@ -87,7 +86,7 @@ def get_Ypredictions(a, X, b):
 def cost_function(X, Y, n, a, b):
 	## Mean Square Error
 	# cost = (1 / (2 * n)) * (np.sum((Y - (a * X + b)) ** 2))
-	cost = (1 / n) * (np.sum((Y - (a * X + b)) ** 2))
+	cost = (1 / n) * (np.sum(np.square(Y - (a * X + b))))
 	return cost
 
 def gradient_descent(X, Y, n, a, b, L):
@@ -106,6 +105,15 @@ def signal_handler(sig, frame):
 	print(f"{RED}Signal detected.{RESET}")
 	sys.exit(1)
 
+def accuracy_percentage(Y, Y_pred):
+	true_mean = np.mean(Y)
+	numerator = np.sum(np.square(Y - Y_pred))
+	denominator = np.sum(np.square(Y - true_mean))
+	rse = numerator / denominator
+	rrmse = np.sqrt(rse)
+	print(f"RSE:{rse:.3f}")
+	print(f"RRMSE:{rrmse:.3f}")
+
 if __name__ == "__main__":
 	signal.signal(signal.SIGINT, signal_handler)
 
@@ -118,8 +126,8 @@ if __name__ == "__main__":
 	a		= 0				# slope
 	b		= 0				# intercept
 	n		= len(X)		# n values in dataset
-	L		= 1			# learning rate
-	epochs	= 4000	# number of iterations
+	L		= 0.5			# learning rate
+	epochs	= 4000			# number of iterations
 	costs	= [0] * epochs	# cost evolution during iterations
 	
 	## iterative - gradient descent
@@ -131,4 +139,5 @@ if __name__ == "__main__":
 	## visualize
 	fig, axs = plt.subplots(1, 2)
 	get_thetas(a, b, x_divider, y_divider)
+	accuracy_percentage(Y, get_Ypredictions(a, X, b))
 	display_datas(X * x_divider, Y * y_divider, get_Ypredictions(a, X, b) * y_divider, axs, epochs, costs)
