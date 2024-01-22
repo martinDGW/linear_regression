@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import sys
+import os
 import signal
 
 RED = "\033[91m"
@@ -12,7 +13,8 @@ GREEN = "\033[92m"
 YELLOW = "\033[93m"
 RESET = "\033[0m"
 
-FOLDER = "./DataSet"
+FOLDER_PATH = "./datas"
+THETAS_PATH = "./gradient_output"
 
 ## NEED PARSING
 # === PARSING === #
@@ -28,10 +30,12 @@ def get_data_values(args):
 	try:
 		if args.file:
 			csv_path = args.file
+			if not csv_path.endswith(".csv"):
+				raise ValueError(f"{RED}File has to get a '.csv' extension.{RESET}")
 			data = pd.read_csv(csv_path)
 			return data.iloc[:, 0].to_numpy(), data.iloc[:, 1].to_numpy()
 		else:
-			raise ValueError(f"{RED}Please provide a path to the CSV file using the --file argument.{RESET}")
+			raise ValueError(f"{RED}Please provide a path to the CSV file using the -f argument.{RESET}")
 	except Exception as e:
 		print(f"{e}")
 
@@ -50,9 +54,11 @@ def normalize(array):
 
 	return array, divider
 
-def get_thetas(a, b, x_divider, y_divider):
+def save_thetas(a, b, x_divider, y_divider):
 	try:
-		with open(f"{FOLDER}/thetas", "w") as file:
+		if not os.path.exists(f"{THETAS_PATH}"):
+			os.makedirs(f"{THETAS_PATH}")
+		with open(f"{THETAS_PATH}/thetas", "w") as file:
 			file.write("[Parameters]" + "\n")
 			file.write("a = " + str(a) + "\n")
 			file.write("b = " + str(b) + "\n")
@@ -106,22 +112,33 @@ def signal_handler(sig, frame):
 	sys.exit(1)
 
 def accuracy_percentage(Y, Y_pred):
+	rss = np.sum(np.square(Y_pred - Y)) # residual square sum
+	mse = rss / len(Y) # mean square error 
+	rmse = np.sqrt(mse) # root mean square error (mse in values referential)
+
 	true_mean = np.mean(Y)
-	numerator = np.sum(np.square(Y - Y_pred))
-	denominator = np.sum(np.square(Y - true_mean))
-	rse = numerator / denominator
-	rrmse = np.sqrt(rse)
+	num = np.sum(np.square(Y - Y_pred))
+	den = np.sum(np.square(Y - true_mean))
+	rse = num / den # relative square error
+	rrmse = np.sqrt(num / (np.square(true_mean) * len(Y))) # relative root square mean error
+	print(f"RSS:{rss:.3f}")
+	print(f"MSE:{mse:.3f}")
+	print(f"RMSE:{rmse:.3f}")
 	print(f"RSE:{rse:.3f}")
 	print(f"RRMSE:{rrmse:.3f}")
 
 if __name__ == "__main__":
 	signal.signal(signal.SIGINT, signal_handler)
 
-	args = parse_arguments()
+	try:
+		args = parse_arguments()
 
-	X, Y = get_data_values(args)
-	X, x_divider = normalize(X)
-	Y, y_divider = normalize(Y)
+		X, Y = get_data_values(args)
+		X, x_divider = normalize(X)
+		Y, y_divider = normalize(Y)
+	except Exception as e:
+		sys.exit(1)
+
 	# initialize parameters
 	a		= 0				# slope
 	b		= 0				# intercept
@@ -132,12 +149,12 @@ if __name__ == "__main__":
 	
 	## iterative - gradient descent
 	for i in range(epochs):
-		costs[i] = cost_function(X, Y, n, a, b) * y_divider
 		a, b = gradient_descent(X, Y, n, a, b, L)
+		costs[i] = cost_function(X, Y, n, a, b) * y_divider
 	print(f"{GREEN}Your model is trained !{RESET}")
 
 	## visualize
 	fig, axs = plt.subplots(1, 2)
-	get_thetas(a, b, x_divider, y_divider)
-	accuracy_percentage(Y, get_Ypredictions(a, X, b))
+	save_thetas(a, b, x_divider, y_divider)
+	accuracy_percentage(Y * y_divider, get_Ypredictions(a, X, b) * y_divider)
 	display_datas(X * x_divider, Y * y_divider, get_Ypredictions(a, X, b) * y_divider, axs, epochs, costs)
